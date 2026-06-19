@@ -249,6 +249,14 @@ def salloc_flow(nodes: list[Node]):
     if cpus is None:
         return
 
+    minutes = ask_int(
+        "Time limit in minutes:",
+        default=60,
+        maximum=7 * 24 * 60,
+    )
+    if minutes is None:
+        return
+
     # Partition shared by the matching nodes (preferring non-preempt) — salloc needs one.
     common = set.intersection(*(set(n.partitions) for n in pool))
     partition = min(common, key=lambda p: ("preempt" in p, p)) if common else None
@@ -261,7 +269,7 @@ def salloc_flow(nodes: list[Node]):
         cmd += [f"--constraint={'v100s' if gpu == 'v100' else 'h100'}", "--gres=gpu:1"]
     elif gpu == "mig":
         cmd.append(f"--gres={gres_spec(max(pool, key=lambda n: n.gpu_free))}")
-    cmd += [f"--cpus-per-task={cpus}", f"--mem={mem_gb}G"]
+    cmd += [f"--cpus-per-task={cpus}", f"--mem={mem_gb}G", f"--time={minutes}"]
     console.print("\n[bold]Command:[/bold] " + " ".join(cmd))
 
     if not questionary.confirm("Run this salloc command?", default=True).ask():
